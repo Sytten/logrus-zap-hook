@@ -18,6 +18,7 @@ import (
 
 func main() {
     log := logrus.New()
+    log.ReportCaller = true // So Zap reports the right caller
     log.SetOutput(ioutil.Discard) // Prevent logrus from writing its logs
     
     logger, _ := zap.NewDevelopment()

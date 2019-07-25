@@ -3,6 +3,7 @@ package logrus_zap_hook
 import (
 	"errors"
 	"io/ioutil"
+	"runtime"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -53,6 +54,29 @@ func TestLogEntryWithError(t *testing.T) {
 	assert.Equal(t, recordedLogs.All()[0].Context[0].Interface.(error).Error(), someErrorMessage)
 }
 
+func TestLogEntryWithCaller(t *testing.T) {
+	log, recordedLogs := newLogger()
+	log.ReportCaller = true
+
+	log.Info(someLogMessage)
+
+	assert.Equal(t, recordedLogs.Len(), 1)
+	assert.Equal(t, recordedLogs.All()[0].Message, someLogMessage)
+	assert.Equal(t, recordedLogs.All()[0].Level, zapcore.InfoLevel)
+	assert.Equal(t, recordedLogs.All()[0].Caller.File, getCurrentFile())
+}
+
+func TestLogEntryWithoutCaller(t *testing.T) {
+	log, recordedLogs := newLogger()
+
+	log.Info(someLogMessage)
+
+	assert.Equal(t, recordedLogs.Len(), 1)
+	assert.Equal(t, recordedLogs.All()[0].Message, someLogMessage)
+	assert.Equal(t, recordedLogs.All()[0].Level, zapcore.InfoLevel)
+	assert.NotEqual(t, recordedLogs.All()[0].Caller.File, getCurrentFile())
+}
+
 func newLogger() (*logrus.Logger, *observer.ObservedLogs) {
 	log := logrus.New()
 	log.SetOutput(ioutil.Discard)
@@ -70,4 +94,9 @@ func newTestHook() (*ZapHook, *observer.ObservedLogs) {
 	hook, _ := NewZapHook(logger)
 
 	return hook, recorded
+}
+
+func getCurrentFile() string {
+	_, file, _, _ := runtime.Caller(0)
+	return file
 }

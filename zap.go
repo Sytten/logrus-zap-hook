@@ -1,8 +1,11 @@
 package logrus_zap_hook
 
 import (
+	"runtime"
+
 	"github.com/sirupsen/logrus"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type ZapHook struct {
@@ -28,20 +31,29 @@ func (hook *ZapHook) Fire(entry *logrus.Entry) error {
 
 	switch entry.Level {
 	case logrus.PanicLevel:
-		hook.Logger.Panic(entry.Message, fields...)
+		hook.Write(zapcore.PanicLevel, entry.Message, fields, entry.Caller)
 	case logrus.FatalLevel:
-		hook.Logger.Fatal(entry.Message, fields...)
+		hook.Write(zapcore.FatalLevel, entry.Message, fields, entry.Caller)
 	case logrus.ErrorLevel:
-		hook.Logger.Error(entry.Message, fields...)
+		hook.Write(zapcore.ErrorLevel, entry.Message, fields, entry.Caller)
 	case logrus.WarnLevel:
-		hook.Logger.Warn(entry.Message, fields...)
+		hook.Write(zapcore.WarnLevel, entry.Message, fields, entry.Caller)
 	case logrus.InfoLevel:
-		hook.Logger.Info(entry.Message, fields...)
+		hook.Write(zapcore.InfoLevel, entry.Message, fields, entry.Caller)
 	case logrus.DebugLevel, logrus.TraceLevel:
-		hook.Logger.Debug(entry.Message, fields...)
+		hook.Write(zapcore.DebugLevel, entry.Message, fields, entry.Caller)
 	}
 
 	return nil
+}
+
+func (hook *ZapHook) Write(lvl zapcore.Level, msg string, fields []zap.Field, caller *runtime.Frame) {
+	if ce := hook.Logger.Check(lvl, msg); ce != nil {
+		if caller != nil {
+			ce.Caller = zapcore.NewEntryCaller(caller.PC, caller.File, caller.Line, caller.PC != 0)
+		}
+		ce.Write(fields...)
+	}
 }
 
 func (hook *ZapHook) Levels() []logrus.Level {

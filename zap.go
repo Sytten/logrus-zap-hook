@@ -23,7 +23,8 @@ func (hook *ZapHook) Fire(entry *logrus.Entry) error {
 
 	for key, value := range entry.Data {
 		if key == logrus.ErrorKey {
-			fields = append(fields, zap.Error(value.(error)))
+			v, _ := value.(error)
+			fields = append(fields, zap.Error(v))
 		} else {
 			fields = append(fields, zap.Any(key, value))
 		}

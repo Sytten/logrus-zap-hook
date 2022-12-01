@@ -28,6 +28,17 @@ func TestLogEntry(t *testing.T) {
 	assert.Equal(t, recordedLogs.All()[0].Level, zapcore.InfoLevel)
 }
 
+func TestLogEntryWithErrorNil(t *testing.T) {
+	log, recordedLogs := newLogger()
+
+	log.WithError(nil).Info(someLogMessage)
+
+	assert.Equal(t, recordedLogs.Len(), 1)
+	assert.Equal(t, recordedLogs.All()[0].Message, someLogMessage)
+	assert.Equal(t, recordedLogs.All()[0].Level, zapcore.InfoLevel)
+	assert.Equal(t, len(recordedLogs.All()[0].Context), 1)
+}
+
 func TestLogEntryWithField(t *testing.T) {
 	log, recordedLogs := newLogger()
 
